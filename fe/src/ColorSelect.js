@@ -12,11 +12,18 @@ const liStyle = {
 }
 
 function ColorSelect(props) {
+  console.log('cs rendered')
   return (
     <ul>
       {
         colors.map(color => (
-          <li key={color} style={liStyle}><button style={{...btnStyle, backgroundColor: color}} onClick={() => props.onChangeColor(color)}></button></li>
+          <li
+            key={color}
+            style={liStyle}>
+              <button
+                style={{...btnStyle, backgroundColor: color}}
+                onClick={() => props.onChangeColor(color)}></button>
+          </li>
         ))
       }
     </ul>

@@ -9,37 +9,18 @@ class App extends Component {
     super(props)
     this.state = {
       pixelData: null,
+      currentColor: 'black',
     }
+    this.socket = io('ws://localhost:8080')
   }
   componentDidMount() {
     // Q:为什么发送ajax要在这个生命周期函数里执行？
     // A:此时DOM已经渲染好了，可以操作DOM。而且如果在willMount里运行setState的话，如果setState是异步更新，因为紧接着就运行render，状态就不会更新到state对象上。
-    var socket = io('ws://localhost:8080')
-    this.socket = socket
-    socket.on('init-data', (data) => {
+    this.socket.on('init-data', (data) => {
       console.log(data)
       // 拿到数据，接下来的任务就是用一个组件把它渲染出来了
       this.setState({
         pixelData: data
-      })
-    })
-    socket.on('update-dot', ({x, y, color}) => {
-      // 用户点了点：更新画布
-      this.setState({
-        pixelData: this.state.pixelData.map((row, ridx) => {
-          // 这里想实现的是immer.js的功能
-          if (ridx === y) {
-            return row.map((col, cidx) => {
-              if (cidx === x) {
-                return color
-              } else {
-                return col
-              }
-            })
-          } else {
-            return row
-          }
-        })
       })
     })
   }
@@ -57,9 +38,10 @@ class App extends Component {
     })
   }
   render() {
+    console.log('app rendered')
     return (
       <div>
-        <PixelGrid pixels={this.state.pixelData} onPixelClick={this.handlePixelClick}/>
+        <PixelGrid onPixelClick={this.handlePixelClick} socket={this.socket}/>
         <ColorSelect color={this.state.currentColor} onChangeColor={this.handleChangeColor}/>
       </div>
     )
