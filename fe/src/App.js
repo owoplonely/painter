@@ -25,11 +25,7 @@ class App extends Component {
     })
   }
   handlePixelClick = (x, y) => {
-    this.socket.emit('draw-dot', {
-      x,
-      y,
-      color: this.state.currentColor
-    })
+    
 
   }
   handleChangeColor = (color) => {
@@ -41,7 +37,7 @@ class App extends Component {
     console.log('app rendered')
     return (
       <div>
-        <PixelGrid onPixelClick={this.handlePixelClick} socket={this.socket}/>
+        <PixelGrid socket={this.socket} color={this.state.currentColor}/>
         <ColorSelect color={this.state.currentColor} onChangeColor={this.handleChangeColor}/>
       </div>
     )

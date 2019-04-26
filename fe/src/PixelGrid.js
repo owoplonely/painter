@@ -33,8 +33,13 @@ class PixelGrid extends PureComponent {
 
   handleDotClick = (e) => {
     // e是react的事件对象，通过e.nativeEvent取得浏览器的原生事件对象
-    const target = e.nativeEvent
-    this.props.onPixelClick(parseInt(target.layerX/this.zoomRatio), parseInt(target.layerY/this.zoomRatio))
+    var x = parseInt(e.nativeEvent.layerX/this.zoomRatio)
+    var y = parseInt(e.nativeEvent.layerY/this.zoomRatio)
+    this.props.socket.emit('draw-dot', {
+      x,
+      y,
+      color: this.props.color
+    })
   }
   render() {
     console.log('PG rendered')
