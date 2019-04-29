@@ -9,7 +9,7 @@ class App extends Component {
     super(props)
     this.state = {
       pixelData: null,
-      currentColor: 'black',
+      currentColor: '#ffffff',
     }
     this.socket = io('ws://localhost:8080')
   }
@@ -24,10 +24,6 @@ class App extends Component {
       })
     })
   }
-  handlePixelClick = (x, y) => {
-    
-
-  }
   handleChangeColor = (color) => {
     this.setState({
       currentColor: color
@@ -37,7 +33,7 @@ class App extends Component {
     console.log('app rendered')
     return (
       <div>
-        <PixelGrid socket={this.socket} color={this.state.currentColor}/>
+        <PixelGrid width={200} height={200} socket={this.socket} color={this.state.currentColor}/>
         <ColorSelect color={this.state.currentColor} onChangeColor={this.handleChangeColor}/>
       </div>
     )

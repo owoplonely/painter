@@ -1,7 +1,7 @@
 import React, {Component} from 'react'
 import { NONAME } from 'dns';
 
-const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'aqua', 'purple']
+const colors = ['#ff0000', '#ffff00', '#00ff00', '#0000ff', '#800080', '#ffa500']
 const btnStyle = {
   width: '1em',
   height: '1em',
@@ -15,6 +15,7 @@ function ColorSelect(props) {
   console.log('cs rendered')
   return (
     <ul>
+      <li><input type="color" value={props.color} onChange={(e) => props.onChangeColor(e.target.value)} /></li>
       {
         colors.map(color => (
           <li
