@@ -33,7 +33,8 @@ class App extends Component {
     console.log('app rendered')
     return (
       <div>
-        <PixelGrid width={200} height={200} socket={this.socket} color={this.state.currentColor}/>
+        <PixelGrid width={200} height={200} socket={this.socket} color={this.state.currentColor} onPickColor={this.handleChangeColor}/>
+        <span id="colorPicker"></span>
         <ColorSelect color={this.state.currentColor} onChangeColor={this.handleChangeColor}/>
       </div>
     )

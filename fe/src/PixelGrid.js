@@ -1,4 +1,34 @@
 import React, {PureComponent} from 'react'
+import ReactDom from 'react-dom'
+
+function makeColor(color) {
+  // 现场画一个取色鼠标，并返回它的dataURL
+  var cursor = document.createElement('canvas'),
+  ctx = cursor.getContext('2d');
+  cursor.width = 41;
+  cursor.height = 41;
+
+  ctx.beginPath();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#000000';
+  ctx.moveTo(0, 6);
+  ctx.lineTo(12, 6);
+  ctx.moveTo(6, 0);
+  ctx.lineTo(6, 12);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(25, 25, 14, 0, 2 * Math.PI, false);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#000000';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(25, 25, 13.4, 0, 2 * Math.PI, false);
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  return cursor.toDataURL()
+}
 
 // 用canvas重构pixelGrid
 class PixelGrid extends PureComponent {
@@ -9,21 +39,22 @@ class PixelGrid extends PureComponent {
       zoomRatio: 5,
       dothoverX: -1,
       dotHoverY: -1,
+      isPickingColor: false
     }
   }
 
   setUpDragHandler = () => { 
     var initialTop, initialLeft, mouseInitialX, mouseInitialY, dragging = false
     var deltaLeft, deltaTop
-    this.canvas.addEventListener('mousedown', e => {
+    this.canvasWrapper.addEventListener('mousedown', e => {
       // 点击的时候记录拖拽开始时的鼠标位置和canvas位置，并把dragging状态置为true
-      initialTop = parseFloat(this.canvas.style.top)
-      initialLeft = parseFloat(this.canvas.style.left)
+      initialTop = parseFloat(this.canvasWrapper.style.top)
+      initialLeft = parseFloat(this.canvasWrapper.style.left)
       mouseInitialX = e.clientX
       mouseInitialY = e.clientY
       dragging = true
     })
-    this.canvas.addEventListener('mouseup', e => {
+    this.canvasWrapper.addEventListener('mouseup', e => {
       // 拖拽结束
       dragging = false
       // 防止拖拽结束时的误点击
@@ -31,28 +62,37 @@ class PixelGrid extends PureComponent {
         this.handleDotClick(e)
       }
     })
-    this.canvas.addEventListener('mousemove', e => {
+    this.canvasWrapper.addEventListener('mousemove', e => {
       if (dragging) {
         // 拖拽过程中
         // 偏移量
         deltaLeft = e.clientX - mouseInitialX
         deltaTop = e.clientY - mouseInitialY
-        this.canvas.style.left = initialLeft + deltaLeft / this.state.zoomRatio + 'px'
-        this.canvas.style.top = initialTop + deltaTop / this.state.zoomRatio + 'px'
+        this.canvasWrapper.style.left = initialLeft + deltaLeft + 'px'
+        this.canvasWrapper.style.top = initialTop + deltaTop + 'px'
       }
+    })
+    // 框出当前选中的格子
+    this.canvasWrapper.addEventListener('mousemove', e => {
+      var x = Math.floor(e.layerX / this.state.zoomRatio) * this.state.zoomRatio
+      var y = Math.floor(e.layerY / this.state.zoomRatio) * this.state.zoomRatio
+        this.setState({
+          dothoverX: x + 'px',
+          dothoverY: y + 'px'
+        })
     })
   }
 
   setUpZoomHandler = () => {
     // 缩放
-    this.canvas.addEventListener('wheel', e => {
+    this.canvasWrapper.addEventListener('wheel', e => {
       var prevZoom = this.state.zoomRatio
       var newZoom = e.deltaY < 0 ? prevZoom + 1 : prevZoom - 1
       if (newZoom < 5) {
         // zoom不应该小于1，如果小于1了将其重置为1并复位
         newZoom = 5
-        this.canvas.style.left = 0
-        this.canvas.style.top = 0
+        this.canvasWrapper.style.left = 0
+        this.canvasWrapper.style.top = 0
       }
       // 更新zoom属性
       this.setState({
@@ -62,8 +102,8 @@ class PixelGrid extends PureComponent {
       // zoom是以元素左上角为原点进行缩放的
       var dx = (newZoom / prevZoom - 1) * e.layerX
       var dy = (newZoom / prevZoom - 1) * e.layerY
-      this.canvas.style.left = (parseFloat(this.canvas.style.left) * prevZoom - dx) / newZoom + 'px'
-      this.canvas.style.top = (parseFloat(this.canvas.style.top) * prevZoom - dy) / newZoom + 'px'
+      this.canvasWrapper.style.left = (parseFloat(this.canvasWrapper.style.left) - dx) + 'px'
+      this.canvasWrapper.style.top = (parseFloat(this.canvasWrapper.style.top) - dy) + 'px'
       e.preventDefault()
     })
   }
@@ -72,6 +112,7 @@ class PixelGrid extends PureComponent {
   componentDidMount() {
     this.setUpZoomHandler()
     this.setUpDragHandler()
+    this.setUpPickHandler()
     this.ctx = this.canvas.getContext('2d')
     // 接收初始数据并渲染
     this.props.socket.on('init-data', async pixelData => {
@@ -95,6 +136,7 @@ class PixelGrid extends PureComponent {
     this.props.socket.on('update-dot', ({x, y, color}) => {
       this.draw(x, y, color)
     })
+    this.forceUpdate()
   }
 
   draw = (x, y, color) => {
@@ -113,18 +155,68 @@ class PixelGrid extends PureComponent {
       color: this.props.color
     })
   }
+
+  setUpPickHandler = () => {
+    this.canvas.addEventListener('mousemove', e => {
+      if (this.state.isPickingColor) {
+        console.log(e.layerX,e.layerY)
+        // 取色中...
+        // 鼠标所在位置的颜色
+        var colorArr = this.ctx.getImageData(parseInt(e.layerX/this.state.zoomRatio), parseInt(e.layerY / this.state.zoomRatio), 1, 1).data
+        var cssColor = 'rgba(' + colorArr + ')'
+        var url = makeColor(cssColor)
+        this.canvas.style.cursor = `url(${url}) 6 6, crosshair`
+      }
+    })
+    this.canvas.addEventListener('click', e => {
+      // 取色完毕
+      // 向上层组件传递选中的颜色
+      var colorArr = Array.from(this.ctx.getImageData(parseInt(e.layerX/this.state.zoomRatio), parseInt(e.layerY / this.state.zoomRatio), 1, 1).data).slice(0, 3)
+      var hexColor = '#' + colorArr.map(it => it.toString(16).padEnd(2, '0')).join('')
+      console.log(hexColor)
+      this.props.onPickColor(hexColor)
+      // 退出取色状态
+      this.setState({
+        isPickingColor: false
+      })
+      // 重置cursor样式
+      this.canvas.style.cursor = ''
+    })
+  }
+
+  setPickColorState = () => {
+    this.setState({
+      isPickingColor: true
+    })
+  }
+
+  renderPickColorBtn() {
+    var el = document.getElementById('colorPicker')
+    if (!el) {
+      return null
+    }
+    return ReactDom.createPortal((
+      <button onClick={this.setPickColorState}>{this.state.isPickingColor ? '正在取色' : '取色'}</button>
+    ), el)
+  }
+
   render() {
     return (
       <div style={{border: '1px solid', display: 'inline-block', height: this.props.height, width: this.props.width, overflow: 'hidden'}}>
-        <div style={{position: 'relative'}}>
+        <div style={{position: 'absolute', left: 0, top: 0}} ref={el => this.canvasWrapper = el}>
+          {this.renderPickColorBtn()}
           <span className="dot-hover-box" style={{
-            boxShadow: '0 0 3px 3px black',
+            boxShadow: '0 0 1px 1px black',
             width: this.state.zoomRatio + 'px',
-            height: this.state.zoomRatio + 'px'
+            height: this.state.zoomRatio + 'px',
+            position: 'absolute',
+            left: this.state.dothoverX,
+            top: this.state.dothoverY,
+            pointerEvents: 'none'
           }}></span>
           <canvas
             ref={el => this.canvas = el}
-            style={{zoom: this.state.zoomRatio, imageRendering: 'pixelated', position: 'absolute', left: 0, top: 0}}></canvas>
+            style={{zoom: this.state.zoomRatio, imageRendering: 'pixelated'}}></canvas>
         </div>
       </div>
     )
