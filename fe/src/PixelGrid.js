@@ -36,7 +36,7 @@ class PixelGrid extends PureComponent {
     super(props)
     this.canvas = null
     this.state = {
-      zoomRatio: 5,
+      zoomRatio: 1,
       dothoverX: -1,
       dotHoverY: -1,
       isPickingColor: false
@@ -88,9 +88,9 @@ class PixelGrid extends PureComponent {
     this.canvasWrapper.addEventListener('wheel', e => {
       var prevZoom = this.state.zoomRatio
       var newZoom = e.deltaY < 0 ? prevZoom + 1 : prevZoom - 1
-      if (newZoom < 5) {
+      if (newZoom < 1) {
         // zoom不应该小于1，如果小于1了将其重置为1并复位
-        newZoom = 5
+        newZoom = 1
         this.canvasWrapper.style.left = 0
         this.canvasWrapper.style.top = 0
       }
@@ -119,8 +119,8 @@ class PixelGrid extends PureComponent {
       // 将pixelData转换成一个image对象
       var image = await createImageFromArrayBuffer(pixelData)
       // 这里的image的宽高为为什么是0？--要到image的onload时候再画
-      this.canvas.width = 20
-      this.canvas.height = 20
+      this.canvas.width = image.width
+      this.canvas.height = image.height
       // 把image画canvas上
       this.ctx.drawImage(image, 0, 0)
       function createImageFromArrayBuffer(buf) {
@@ -169,18 +169,20 @@ class PixelGrid extends PureComponent {
       }
     })
     this.canvas.addEventListener('click', e => {
-      // 取色完毕
-      // 向上层组件传递选中的颜色
-      var colorArr = Array.from(this.ctx.getImageData(parseInt(e.layerX/this.state.zoomRatio), parseInt(e.layerY / this.state.zoomRatio), 1, 1).data).slice(0, 3)
-      var hexColor = '#' + colorArr.map(it => it.toString(16).padEnd(2, '0')).join('')
-      console.log(hexColor)
-      this.props.onPickColor(hexColor)
-      // 退出取色状态
-      this.setState({
-        isPickingColor: false
-      })
-      // 重置cursor样式
-      this.canvas.style.cursor = ''
+      if (this.state.isPickingColor) {
+        // 取色完毕
+        // 向上层组件传递选中的颜色
+        var colorArr = Array.from(this.ctx.getImageData(parseInt(e.layerX/this.state.zoomRatio), parseInt(e.layerY / this.state.zoomRatio), 1, 1).data).slice(0, 3)
+        var hexColor = '#' + colorArr.map(it => it.toString(16).padEnd(2, '0')).join('')
+        console.log(hexColor)
+        this.props.onPickColor(hexColor)
+        // 退出取色状态
+        this.setState({
+          isPickingColor: false
+        })
+        // 重置cursor样式
+        this.canvas.style.cursor = ''
+      }
     })
   }
 
@@ -202,8 +204,8 @@ class PixelGrid extends PureComponent {
 
   render() {
     return (
-      <div style={{border: '1px solid', display: 'inline-block', height: this.props.height, width: this.props.width, overflow: 'hidden'}}>
-        <div style={{position: 'absolute', left: 0, top: 0}} ref={el => this.canvasWrapper = el}>
+      <div style={{border: '1px solid', display: 'inline-block', height: this.props.height, width: this.props.width, overflow: 'hidden', position:'relative'}}>
+        <div style={{position: 'absolute', left: 0, top: 0, overflow: 'hidden'}} ref={el => this.canvasWrapper = el}>
           {this.renderPickColorBtn()}
           <span className="dot-hover-box" style={{
             boxShadow: '0 0 1px 1px black',
