@@ -45,20 +45,23 @@ class PixelGrid extends PureComponent {
 
   setUpDragHandler = () => { 
     var initialTop, initialLeft, mouseInitialX, mouseInitialY, dragging = false
-    var deltaLeft, deltaTop
+    var deltaLeft = 0, deltaTop = 0
     this.canvasWrapper.addEventListener('mousedown', e => {
-      // 点击的时候记录拖拽开始时的鼠标位置和canvas位置，并把dragging状态置为true
-      initialTop = parseFloat(this.canvasWrapper.style.top)
-      initialLeft = parseFloat(this.canvasWrapper.style.left)
-      mouseInitialX = e.clientX
-      mouseInitialY = e.clientY
-      dragging = true
+      if (!dragging) {
+        // 点击的时候记录拖拽开始时的鼠标位置和canvas位置，并把dragging状态置为true
+        initialTop = parseFloat(this.canvasWrapper.style.top)
+        initialLeft = parseFloat(this.canvasWrapper.style.left)
+        mouseInitialX = e.clientX
+        mouseInitialY = e.clientY
+        dragging = true
+      }
     })
     this.canvasWrapper.addEventListener('mouseup', e => {
       // 拖拽结束
       dragging = false
+      debugger
       // 防止拖拽结束时的误点击
-      if (Math.sqrt(deltaLeft ** 2 + deltaTop ** 2) < 3) {
+      if (Math.sqrt((deltaLeft / this.state.zoomRatio) ** 2 + (deltaTop / this.state.zoomRatio) ** 2) < 3) {
         this.handleDotClick(e)
       }
     })
@@ -146,7 +149,6 @@ class PixelGrid extends PureComponent {
   }
 
   handleDotClick = (e) => {
-    // e是react的事件对象，通过e.nativeEvent取得浏览器的原生事件对象
     var x = parseInt(e.layerX/this.state.zoomRatio)
     var y = parseInt(e.layerY/this.state.zoomRatio)
     this.props.socket.emit('draw-dot', {

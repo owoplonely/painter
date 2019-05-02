@@ -12,7 +12,7 @@ class App extends Component {
       currentColor: '#ffffff',
     }
     // 默认连接的是当前端口
-    this.socket = io()
+    this.socket = io('localhost:8080')
   }
   componentDidMount() {
     // Q:为什么发送ajax要在这个生命周期函数里执行？
